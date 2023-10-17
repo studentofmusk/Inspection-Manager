@@ -1,0 +1,19 @@
+{
+  "name": "firefighter",
+  "version": "1.0.0",
+  "description": "Fire Fighting Department Inspection Management server",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/studentofmusk/Inspection-Manager.git"
+  },
+  "author": "Farooq Khan",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/studentofmusk/Inspection-Manager/issues"
+  },
+  "homepage": "https://github.com/studentofmusk/Inspection-Manager#readme"
+}
