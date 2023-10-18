@@ -4,12 +4,16 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const user_routes = require('./Routes/user.route');
+const errorHandlingMiddleware = require('./Error/middleware');
 
 //-----Create Express Server-----
 const app = express();
 
 //-----DotEnv Cofigration-----
 dotenv.config();
+
+//-----DB Connection-------
+require("./DB/conn");
 
 //-----ENV Variable-----
 
@@ -27,6 +31,9 @@ app.use(cookieParser());
 // User Routes 
 app.use("/api", user_routes);
 
+
+//Error middleware
+app.use(errorHandlingMiddleware);
 
 //-----Server Listening-----
 app.listen(PORT, ()=>{
