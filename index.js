@@ -5,6 +5,7 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const user_routes = require('./Routes/user.route');
 const errorHandlingMiddleware = require('./Error/middleware');
+const master_routes = require('./Routes/master.route');
 
 //-----Create Express Server-----
 const app = express();
@@ -30,6 +31,8 @@ app.use(cookieParser());
 
 // User Routes 
 app.use("/api", user_routes);
+app.use("/api", master_routes)
+
 
 
 //Error middleware

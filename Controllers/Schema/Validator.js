@@ -12,7 +12,14 @@ const userSchema = Joi.object({
     departmentID:Joi.string().required()
 });
 
+//department 
+const departmentSchema= Joi.object({
+    departmentID:Joi.string().required(),
+    name:Joi.string().required(),
+    address:Joi.string().required()
 
+});
 module.exports = {
-    userSchema
+    userSchema,
+    departmentSchema
 }
