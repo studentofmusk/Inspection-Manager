@@ -32,7 +32,7 @@ const userSchema = new Schema({
 userSchema.pre('save', async function(next){
     try{
         if(this.isModified('password')){
-            this.password = Encrypt(this.password);
+            this.password = await Encrypt(this.password);
         }
     }catch(error){
         next(error)

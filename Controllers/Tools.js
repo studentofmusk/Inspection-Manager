@@ -1,6 +1,12 @@
 const nodemailer = require('nodemailer');
-const randomstring = require('randomstring');
 const bcryptjs = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const dotenv = require('dotenv');
+dotenv.config();
+
+//Env Variable
+const SECRET_KEY = process.env.SECRETKEY;
+
 
 //------Node Mailer-----
 
@@ -38,10 +44,15 @@ const RaiseMail = async(to="", subject="", text="", html="")=>{
 }
 
 const GenerateOTP = ()=>{
-    return randomstring.generate({
-        length:6,
-        charset:'numeric'
-    })
+    let otp = '';
+    const possibleChars = '123456789';
+    
+    for (let i = 0; i < 6; i++) {
+        const randomIndex = Math.floor(Math.random() * possibleChars.length);
+        otp += possibleChars[randomIndex];
+    }
+
+    return parseInt(otp);
 }
 
 const RaiseOTP = async(to="")=>{
@@ -70,18 +81,34 @@ const Encrypt = async(password)=>{
 }
 const DecryptAndCheck = async(password, hashPassword)=>{
     try{
-        await bcryptjs.compare(password, hashPassword);
-        return true;
+        return await bcryptjs.compare(password, hashPassword);
     }catch(error){
-        // console.log("Bcrypt:", error.message);
+        console.log("Bcrypt:", error.message);
         return false;
     }
 }
-
+const generateToken = (payload)=>{
+    console.log(SECRET_KEY);
+    const token = jwt.sign(payload, SECRET_KEY);
+    return token;
+    
+}
+const verifyToken = (token)=>{
+    try{
+        console.log(SECRET_KEY);
+        const payload = jwt.verify(token, SECRET_KEY);
+        return payload;
+    }catch(error){
+        return false;
+    }
+    
+}
 
 module.exports= {
     RaiseMail,
     RaiseOTP,
     Encrypt, 
-    DecryptAndCheck
+    DecryptAndCheck,
+    generateToken,
+    verifyToken
 }
