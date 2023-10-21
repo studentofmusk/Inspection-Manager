@@ -16,8 +16,7 @@ const departmentSchema = new Schema({
         required:true 
     },
     captain_ID:{
-        type:String,
-        unique:true
+        type:String
     }
 
 })

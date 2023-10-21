@@ -22,6 +22,7 @@ const adminSignup = async(req, res, next)=>{
             sender_type:0,   //user
             to:"master",
             receiver_type:2,  //master
+            departmentID: isDeptExist.dept_ID,
             title:"Admin Request",
             message:`Requesting to grant charge us an Firecaptain(Admin) for \nDepartment name:${isDeptExist.name}\nDepartment ID:${isDeptExist.dept_ID}\n\nUser Details\nFull Name:${isUserExist.firstname} ${isUserExist.lastname}\nUser ID:${isUserExist.user_ID}`,
             redirect:`/master/approve?userID=${isUserExist.user_ID}&departmentID=${isDeptExist.dept_ID}`,

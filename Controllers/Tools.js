@@ -89,8 +89,11 @@ const DecryptAndCheck = async(password, hashPassword)=>{
 }
 
 //-----JSON WEB TOKEN-----
-const generateToken = (payload)=>{
-    console.log(SECRET_KEY);
+const generateToken = (payload, expire="")=>{
+    if(expire){        
+        const token = jwt.sign(payload, SECRET_KEY, {expiresIn:expire});
+        return token;
+    }
     const token = jwt.sign(payload, SECRET_KEY);
     return token;
     

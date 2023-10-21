@@ -22,15 +22,30 @@ const departmentSchema= Joi.object({
     departmentID:Joi.string().required(),
     name:Joi.string().required(),
     address:Joi.string().required()
-
+    
 });
 const adminApproveSchema= Joi.object({
     userID:Joi.string().required(),
     departmentID:Joi.string().required()
 });
+
+const masterSignupSchema = Joi.object({
+    email:Joi.string().email().required(),
+    password:Joi.string().required(),
+    cpassword:Joi.string().valid(Joi.ref('password')).required().messages({
+        'any.only':"Confirm password does not match with Password"
+    }),
+    otp:Joi.number().required()
+})
+const masterLoginSchema = Joi.object({
+    email:Joi.string().email().required(),
+    password:Joi.string().required()
+})
 module.exports = {
     userSignupSchema,
     userLoginSchema,
     departmentSchema,
-    adminApproveSchema 
+    adminApproveSchema,
+    masterSignupSchema,
+    masterLoginSchema
 }

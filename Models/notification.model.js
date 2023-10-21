@@ -20,6 +20,10 @@ const notificationSchema = new Schema({
         default:0, // 0:user, 1:admin, 2:master, 3.department
         required:true    
     },
+    departmentID:{
+        type:String,
+        default:"unknown"
+    },
     title:{
         type:String,
         required:true 

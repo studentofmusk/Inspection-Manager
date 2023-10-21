@@ -86,6 +86,7 @@ const signup = async(req, res, next)=>{
             sender_type:0,   //user
             to:isDeptExist.dept_ID,
             receiver_type:3,  //department
+            departmentID:isDeptExist.dept_ID,
             title:"Login Request",
             message:`Requesting to grant charge us a Fire Fighter (User) for \nDepartment name:${isDeptExist.name}\nDepartment ID:${isDeptExist.dept_ID}\n\nUser Details\nFull Name:${newUser.firstname} ${newUser.lastname}\nUser ID:${newUser.user_ID}`,
             redirect:`/admin/approve?userID=${newUser.user_ID}&departmentID=${isDeptExist.dept_ID}`,
