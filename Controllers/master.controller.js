@@ -63,7 +63,7 @@ const setCaptain = async(req, res, next)=>{
             departmentID:isDeptExist.dept_ID,
             title:"New Fire Captain",
             message:`New Fire Captain (Admin) for \nDepartment name:${isDeptExist.name}\nDepartment ID:${isDeptExist.dept_ID}\n\nCaptain Details\nFull Name:${isUserExist.firstname} ${isUserExist.lastname}\nCaptain ID:${isUserExist.user_ID}`,
-            redirect:``,
+            redirect:`/`,
             notification_type:0, //normal
         });
         await raiseAlert.save();

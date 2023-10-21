@@ -140,9 +140,57 @@ const login = async(req, res, next)=>{
     }
 }
 
+const getNotifications = async (req, res, next)=>{
+    try{
+        const ID = req.userID;
+        if(!ID) throw new BadRequestError("User ID not found");
+
+        const isUserExist = await User.findById(ID);
+        if(!isUserExist) throw new NotFoundError("Invalid User ID");
+
+        const inbox = await Notification.find({
+            $and:
+            [
+                {
+                    $or:[
+                        {to:isUserExist.user_ID},
+                        {to:"all", receiver_type:0}
+                    ]
+                },
+                {
+                    departmentID:isUserExist.departmentID
+                }
+            ]
+        },
+        {
+            redirect:0
+        }
+        );
+        const outbox = await Notification.find({
+            $and:
+            [
+                {
+                    from:isUserExist.user_ID
+                },
+                {
+                    departmentID:isUserExist.departmentID
+                }
+            ]
+        },
+        {
+            redirect:0
+        }
+        );
+
+        res.status(200).send({success:true, message:"Notification Fetched!", data:{inbox, outbox}});
+    }catch(error){
+        next(error);
+    }
+}
        
 module.exports = {
     signup,
     login,
-    sendOTP
+    sendOTP,
+    getNotifications
 }
