@@ -65,7 +65,7 @@ const setCaptain = async(req, res, next)=>{
             message:`New Fire Captain (Admin) for \nDepartment name:${isDeptExist.name}\nDepartment ID:${isDeptExist.dept_ID}\n\nCaptain Details\nFull Name:${isUserExist.firstname} ${isUserExist.lastname}\nCaptain ID:${isUserExist.user_ID}`,
             redirect:`/`,
             notification_type:0, //normal
-        });
+        })
         await raiseAlert.save();
 
         res.status(201).send({success:true, message:"Captain Attachment successful"})
@@ -152,10 +152,29 @@ const loginMaster = async (req, res, next)=>{
     }
 }
 
+const getMasterNotification = async(req, res, next)=>{
+    try{
+        const ID = req.masterID;
+        if(!ID) throw new BadRequestError("Master ID Not found")
+
+        const isMasterExist = await Master.findById(ID);
+        if(!isMasterExist) throw new NotFoundError("Invalid Master ID");
+        
+        const inbox = await Notification.find({
+            to:"master"
+        });
+        res.status(200).send({success:true, message:"Master Notifications Fetched", data:{inbox}});
+
+    }catch(error){
+        next(error);
+    }
+}
+
 
 module.exports = {
     createDepartment,
     setCaptain,
     createMasterAccount,
-    loginMaster
+    loginMaster,
+    getMasterNotification
 }

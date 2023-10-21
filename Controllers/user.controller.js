@@ -142,6 +142,7 @@ const login = async(req, res, next)=>{
 
 const getNotifications = async (req, res, next)=>{
     try{
+        console.log("here");
         const ID = req.userID;
         if(!ID) throw new BadRequestError("User ID not found");
 

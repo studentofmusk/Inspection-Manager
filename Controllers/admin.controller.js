@@ -1,4 +1,4 @@
-const { BadRequestError, NotFoundError } = require("../Error/error");
+const { BadRequestError, NotFoundError, AuthError } = require("../Error/error");
 const Department = require("../Models/department.model");
 const Notification = require("../Models/notification.model");
 const User = require("../Models/user.model");
@@ -36,6 +36,89 @@ const adminSignup = async(req, res, next)=>{
 
 }
 
+
+const getAdminNotification = async(req, res, next)=>{
+    try{
+        const ID = req.userID;
+        if(!ID) throw new BadRequestError("Invalid User ID");
+
+        const isUserExist = await User.findById(ID);
+        if(!isUserExist && !isUserExist.admin) throw new NotFoundError("Invalid Admin ID");
+
+        const isDeptExist = await Department.findOne({dept_ID:isUserExist.departmentID});
+        if(!isDeptExist) throw new NotFoundError("Invalid Department ID");
+
+        if(isDeptExist.captain_ID != isUserExist.user_ID) throw new AuthError("Access Denied")
+
+        const inbox = await Notification.find({
+            $and:
+            [
+                {
+                    $or:[
+                        {to:isUserExist.user_ID},
+                        {to:"all"}
+                    ]
+                },
+                {
+                    departmentID:isUserExist.departmentID
+                }
+            ]
+        }
+        );
+
+        const outbox = await Notification.find({
+            $and:
+            [
+                {
+                    $or:[
+                        {from:isUserExist.user_ID}
+                    ]
+                },
+                {
+                    departmentID:isUserExist.departmentID
+                }
+            ]
+        }
+        );
+        const deptInbox = await Notification.find({
+            $and:
+            [
+                {
+                    $or:[
+                        {to:isUserExist.departmentID},
+                        {to:"all"}
+                    ]
+                },
+                {
+                    departmentID:isUserExist.departmentID
+                }
+            ]
+        }
+        );
+
+        const deptOutbox = await Notification.find({
+            $and:
+            [
+                {
+                    $or:[
+                        {from:isUserExist.departmentID}
+                    ]
+                },
+                {
+                    departmentID:isUserExist.departmentID
+                }
+            ]
+        }
+        );
+
+
+        res.status(200).send({success:true, message:"Notification Fetched", data:{inbox, outbox, deptInbox, deptOutbox}});
+    }catch(error){
+        next(error);
+    }
+}
+
 module.exports ={
-    adminSignup
+    adminSignup,
+    getAdminNotification
 }
