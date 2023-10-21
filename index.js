@@ -6,6 +6,7 @@ const cookieParser = require('cookie-parser');
 const user_routes = require('./Routes/user.route');
 const errorHandlingMiddleware = require('./Error/middleware');
 const master_routes = require('./Routes/master.route');
+const admin_routes = require('./Routes/admin.route');
 
 //-----Create Express Server-----
 const app = express();
@@ -31,7 +32,8 @@ app.use(cookieParser());
 
 // User Routes 
 app.use("/api", user_routes);
-app.use("/api", master_routes)
+app.use("/api/admin", admin_routes);
+app.use("/api/master/admin", master_routes)
 
 
 

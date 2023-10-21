@@ -24,8 +24,13 @@ const departmentSchema= Joi.object({
     address:Joi.string().required()
 
 });
+const adminApproveSchema= Joi.object({
+    userID:Joi.string().required(),
+    departmentID:Joi.string().required()
+});
 module.exports = {
     userSignupSchema,
     userLoginSchema,
-    departmentSchema
+    departmentSchema,
+    adminApproveSchema 
 }

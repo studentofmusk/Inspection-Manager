@@ -15,12 +15,21 @@ const departmentSchema = new Schema({
         type:String,
         required:true 
     },
-    captainID:{
+    captain_ID:{
         type:String,
         unique:true
     }
 
 })
+
+departmentSchema.methods.changeCaptain = async function(captainID){
+    try{
+        this.captain_ID=captainID;
+        await this.save();
+    }catch(error){
+        throw error;
+    }
+}
 
 
 const Department = mongoose.model("Department", departmentSchema);

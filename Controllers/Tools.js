@@ -76,7 +76,7 @@ const Encrypt = async(password)=>{
         return hash;
     }catch(error){
         console.log("Bcrypt:", error.message);
-        return false;
+        throw error
     }
 }
 const DecryptAndCheck = async(password, hashPassword)=>{
@@ -87,6 +87,8 @@ const DecryptAndCheck = async(password, hashPassword)=>{
         return false;
     }
 }
+
+//-----JSON WEB TOKEN-----
 const generateToken = (payload)=>{
     console.log(SECRET_KEY);
     const token = jwt.sign(payload, SECRET_KEY);
@@ -103,6 +105,8 @@ const verifyToken = (token)=>{
     }
     
 }
+
+
 
 module.exports= {
     RaiseMail,
