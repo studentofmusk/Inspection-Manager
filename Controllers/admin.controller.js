@@ -163,10 +163,56 @@ const userApprove = async (req, res, next)=>{
     }catch(error){
         next(error);
     }
-} 
+}
+
+const removeUser = async (req, res, next)=>{
+    try{
+        const userID = req.query.id;
+        const adminID = req.userID;
+        if(!userID) throw new BadRequestError("Invalid ID, ID not Found");
+        if(!adminID) throw new BadRequestError("Invalid Admin ID, ID not Found");
+        
+        const isUserExist = await User.findOne({user_ID:userID});
+        if(!isUserExist) throw new NotFoundError("No User Exist!");
+        if(!isUserExist.active) throw new Conflict("User Already Deactivated!");
+
+        const isAdminExist = await User.findById(adminID);
+        if(!isAdminExist || !isAdminExist.admin) throw new AuthError("Invalid Admin!");
+
+        const isDeptExist = await Department.findOne({dept_ID:isUserExist.departmentID});
+        if(!isDeptExist) throw new BadRequestError("Invalid Department");
+        if(isDeptExist.captain_ID !== isAdminExist.user_ID) throw new ForbiddenError("You are not Captain for the Given User's deparment!");
+
+        if(isAdminExist.departmentID !== isUserExist.departmentID) throw new BadRequestError("Admin and User Department are not Same. User from other department!");
+        if(isAdminExist.user_ID === isUserExist.user_ID) throw new BadRequestError("Your unable to Remove your Self");
+
+        await isUserExist.makeDeactive();
+        
+        const raiseAlert = new Notification({
+            from:isAdminExist.user_ID,
+            sender_type:1,   //admin
+            to:"all",
+            receiver_type:0,  //user
+            departmentID: isAdminExist.departmentID,
+            title:"User Removed",
+            message:` FireFighter Captain Removed a FireFighter from your Deparment! \nDepartment name:${isDeptExist.name}\nDepartment ID:${isDeptExist.dept_ID}\n\nUser Details\nFull Name:${isUserExist.firstname} ${isUserExist.lastname}\nUser ID:${isUserExist.user_ID}`,
+            redirect:`/`,
+            notification_type:2, //alert
+        });
+        await raiseAlert.save();
+        res.status(201).send({success:true, message:"User Deactivated"});
+    }catch(error){
+        next(error);
+    }
+}
+
+
+
+
 module.exports ={
     adminSignup,
     getAdminNotification,
-    userApprove
+    userApprove,
+    removeUser
 
 }
