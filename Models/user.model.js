@@ -45,6 +45,25 @@ const userSchema = new Schema({
     }
 })
 
+userSchema.methods.makeActive = async function(){
+    try{
+        this.active = true;
+        await this.save();
+    }catch(error){
+        next(error);
+    }
+}
+
+userSchema.methods.makeDeactive = async function(){
+    try{
+        this.active = false;
+        await this.save();
+    }catch(error){
+        next(error);
+    }
+}
+
+
 userSchema.methods.removeAdmin = async function (){
     try {
         this.admin = false;

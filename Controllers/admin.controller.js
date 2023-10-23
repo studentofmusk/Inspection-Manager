@@ -1,4 +1,4 @@
-const { BadRequestError, NotFoundError, AuthError } = require("../Error/error");
+const { BadRequestError, NotFoundError, AuthError, Conflict, ForbiddenError } = require("../Error/error");
 const Department = require("../Models/department.model");
 const Notification = require("../Models/notification.model");
 const User = require("../Models/user.model");
@@ -36,7 +36,7 @@ const adminSignup = async(req, res, next)=>{
 
 }
 
-
+//Get All Admin Notification
 const getAdminNotification = async(req, res, next)=>{
     try{
         const ID = req.userID;
@@ -65,7 +65,6 @@ const getAdminNotification = async(req, res, next)=>{
             ]
         }
         );
-
         const outbox = await Notification.find({
             $and:
             [
@@ -95,7 +94,6 @@ const getAdminNotification = async(req, res, next)=>{
             ]
         }
         );
-
         const deptOutbox = await Notification.find({
             $and:
             [
@@ -118,7 +116,57 @@ const getAdminNotification = async(req, res, next)=>{
     }
 }
 
+//Make User Approve
+const userApprove = async (req, res, next)=>{
+    try{
+        //Validate Query
+        const userID = req.query.id;
+        if(!userID) throw new BadRequestError("User ID Not found");
+        
+        const adminID = req.userID;
+        if(!adminID) throw new AuthError("Access Denied!");
+
+        //check Admin Existancy
+        const isAdminExist = await User.findOne({_id:adminID, admin:true});
+        if(!isAdminExist) throw new AuthError("Access Denied!");
+
+        //checking Captain Existency
+        const isCaptainExist = await Department.findOne({dept_ID:isAdminExist.departmentID, captain_ID:isAdminExist.user_ID});
+        if(!isCaptainExist) throw new AuthError("Invalid Captain Access!");
+
+        //Checking User Existancy
+        const isUserExist = await User.findOne({user_ID:userID});
+        if(!isUserExist) throw new NotFoundError("Invalid User ID");
+        
+        if(isAdminExist.departmentID !== isUserExist.departmentID) throw new ForbiddenError("User and Admin Department are NOT SAME");
+        
+        //Checking wheter the user already approved or not
+        if(isUserExist.active) throw new Conflict("User Already in Active State!");
+
+        await isUserExist.makeActive();
+
+        const raiseNotification = new Notification({
+            from:isAdminExist.user_ID,
+            sender_type:1,   //admin
+            to:isUserExist.user_ID,
+            receiver_type:0,  //user
+            departmentID: isAdminExist.departmentID,
+            title:"User Request Accepted",
+            message:`Now, You have access to Inspect and Explore thing from Here. \nDepartment name:${isCaptainExist.name}\nDepartment ID:${isCaptainExist.dept_ID}\n\nUser Details\nFull Name:${isUserExist.firstname} ${isUserExist.lastname}\nUser ID:${isUserExist.user_ID}`,
+            redirect:`/`,
+            notification_type:1, //permission
+        });
+        await raiseNotification.save();
+
+        res.status(201).send({success:true, message:"User Approved successfully!"})
+         
+    }catch(error){
+        next(error);
+    }
+} 
 module.exports ={
     adminSignup,
-    getAdminNotification
+    getAdminNotification,
+    userApprove
+
 }

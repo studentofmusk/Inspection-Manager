@@ -170,11 +170,68 @@ const getMasterNotification = async(req, res, next)=>{
     }
 }
 
+const adminApprove = async(req, res, next)=>{
+    try{
+        //Validate Query
+        const userID = req.query.id;
+        const deptID = req.query.deptID;
+        if(!userID) throw new BadRequestError("User ID Not found");
+        if(!deptID) throw new BadRequestError("Department ID Not Found");
 
+        const masterID = req.masterID;
+        if(!masterID) throw new AuthError("Access Denied!");
+
+        //check Master Existancy
+        const isMasterExist = await Master.findById(masterID);
+        if(!isMasterExist) throw new AuthError("Access Denied!");
+
+        //Checking User Existancy
+        const isUserExist = await User.findOne({user_ID:userID});
+        if(!isUserExist) throw new NotFoundError("Invalid User ID");
+        
+        //checking Captain Existency
+        const isCaptainExist = await Department.findOne({captain_ID:userID});
+        if(isCaptainExist) throw new AuthError("Your are Already a Captain of another Department! ");
+        
+        //Checking Department Existency
+        const isDeptExist = await Department.findOne({dept_ID:deptID});
+        if(!isDeptExist) throw new NotFoundError("Invalid Department ID")
+
+        if(isDeptExist.captain_ID !== ""){
+            const isOldCaptainExist = await User.findOne({user_ID:isDeptExist.captain_ID});
+            if(isOldCaptainExist){
+
+                await isOldCaptainExist.removeAdmin();  
+            } 
+        }
+
+        await isDeptExist.changeCaptain(isUserExist.user_ID);
+        await isUserExist.grantAdmin();
+
+        const raiseAlert = new Notification({
+            from:"master",
+            sender_type:2,   //master
+            to:"all",
+            receiver_type:0,  //user
+            departmentID:isDeptExist.dept_ID,
+            title:"New Fire Captain",
+            message:`New Fire Captain (Admin) for \nDepartment name:${isDeptExist.name}\nDepartment ID:${isDeptExist.dept_ID}\n\nCaptain Details\nFull Name:${isUserExist.firstname} ${isUserExist.lastname}\nCaptain ID:${isUserExist.user_ID}`,
+            redirect:`/`,
+            notification_type:0, //normal
+        })
+        await raiseAlert.save();
+
+        res.status(201).send({success:true, message:"Captain Attachment successful"})
+            
+    }catch(error){
+        next(error);
+    }
+}
 module.exports = {
     createDepartment,
     setCaptain,
     createMasterAccount,
     loginMaster,
-    getMasterNotification
+    getMasterNotification,
+    adminApprove
 }
