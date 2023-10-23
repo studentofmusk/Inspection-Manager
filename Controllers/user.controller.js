@@ -1,6 +1,6 @@
-const { BadRequestError, InternalServerError, Conflict, NotFoundError, AuthError } = require("../Error/error");
-const { RaiseMail, RaiseOTP, DecryptAndCheck, generateToken} = require("./Tools")
-const { userSignupSchema, userLoginSchema } = require("./Schema/Validator");
+const { BadRequestError, InternalServerError, Conflict, NotFoundError, AuthError, ForbiddenError } = require("../Error/error");
+const { RaiseMail, RaiseOTP, DecryptAndCheck, generateToken, verifyToken} = require("./Tools")
+const { userSignupSchema, userLoginSchema, changePasswordSchema } = require("./Schema/Validator");
 const Department = require("../Models/department.model");
 const User = require("../Models/user.model");
 const OTP = require("../Models/OTP.model");
@@ -140,6 +140,59 @@ const login = async(req, res, next)=>{
     }
 }
 
+const forgotPassword = async(req, res, next)=>{
+    try{
+        const email = req.query.email;
+        if(!email) throw new BadRequestError("Invalid Email address!");
+        
+        //check user validation
+        const isExist = await User.findOne({email});
+        if(!isExist) throw new BadRequestError("Invalid Email address!");
+        
+        //generate Token
+        const token = generateToken({id:isExist.id}, "15m");
+
+        //add Token at user Document field
+        await isExist.addFgtToken(token);
+        
+        await RaiseMail(isExist.email, "Forgot Password Request","You can change your password by clicking this link", `<br/><a href="${process.env.DOMAIN}/forgot-password?id=${token}">click here</a>` );
+
+        res.status(200).send({success:true, message:"Request Sent successfully! Please check your Mail"});
+
+    }catch(error){
+        next(error);
+    }
+}
+
+const changePassword = async (req, res, next)=>{
+    try{
+        //Schema Validation
+        const {error} = changePasswordSchema.validate(req.body);
+        if(error) throw new BadRequestError(error.details[0].message);
+
+        const {password, token} = req.body;
+        
+        //token verification
+        const isTokenValid = verifyToken(token);
+        if(!isTokenValid) throw new BadRequestError("Token Invalid or Expired!");
+
+        const id = isTokenValid.id; 
+        
+        //checking token validation
+        const isUserExist = await User.findById(id);
+        if(!isUserExist) throw new NotFoundError("Invalid User");
+        if(isUserExist.fgtToken !== token) throw new ForbiddenError("Invalid User Token!");  
+
+        await isUserExist.removeFgtToken();
+        await isUserExist.updatePassword(password);
+        
+        res.status(201).send({success:true, message:"Password Changed Successfully!"});
+        
+
+    }catch(error){
+        next(error);
+    }
+}
 const getNotifications = async (req, res, next)=>{
     try{
         console.log("here");
@@ -193,5 +246,7 @@ module.exports = {
     signup,
     login,
     sendOTP,
-    getNotifications
+    getNotifications,
+    forgotPassword,
+    changePassword
 }

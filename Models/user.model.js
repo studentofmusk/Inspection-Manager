@@ -39,6 +39,9 @@ const userSchema = new Schema({
         type:Boolean,
         default:false,
         required:true
+    },
+    fgtToken:{
+        type:String,
     }
 })
 
@@ -58,6 +61,32 @@ userSchema.methods.grantAdmin = async function (){
         await this.save();
     } catch (error) {
         throw error
+    }
+}
+
+userSchema.methods.addFgtToken = async function(token){
+    try{
+        this.fgtToken = token;
+        await this.save();
+    }catch(error){
+        throw error;
+    }
+}
+
+userSchema.methods.removeFgtToken = async function(){
+    try{
+        this.fgtToken = "";
+        await this.save();
+    }catch(error){
+        throw error;
+    }
+}
+
+userSchema.methods.updatePassword = async function(newPassword){
+    try{
+        this.password = newPassword;
+    }catch(error){
+        throw error;
     }
 }
 
