@@ -117,7 +117,7 @@ const login = async(req, res, next)=>{
             
         //Password Checkup
         const isValid = await DecryptAndCheck(password, user.password);
-        console.log(isValid);
+        
         if(!isValid) throw new NotFoundError("Invalid email or password");
         
         //Check Active status
@@ -125,7 +125,10 @@ const login = async(req, res, next)=>{
 
         //Create a token ticket at client        
         const payload = {
-            id:user.id
+            id:user.id,
+            username:`${user.firstname} ${user.lastname}`,
+            admin:user.admin,
+            userID:user.user_ID
         };
         const token = generateToken(payload);        
         res.cookie("usertoken", token, {
@@ -133,7 +136,7 @@ const login = async(req, res, next)=>{
         });
 
         //After Authentication
-        res.status(200).send({success:true, message:"Login Successful!"})
+        res.status(200).send({success:true, message:"Login Successful!", data:payload})
 
     } catch (error) {
         next(error);
