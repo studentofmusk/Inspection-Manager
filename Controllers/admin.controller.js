@@ -279,7 +279,7 @@ const createTruck = async(req, res, next)=>{
         const adminData = await User.findById(adminID);
         if(!adminData) throw new AuthError("Invalid User");
 
-        const isExist = await Truck.findOne({truck_number:truck_number.toUpperCase()});
+        const isExist = await Truck.findOne({truck_number:truck_number.toUpperCase(), departmentID:adminData.departmentID});
         if(isExist) throw new Conflict("Truck Already Exist"); 
 
         const newTruck = new Truck({truck_number:truck_number.toUpperCase(), departmentID:adminData.departmentID});
@@ -301,8 +301,8 @@ const updateTruck = async(req, res, next)=>{
         const {
             truck_number, driver_front_compartment, driver_second_compartment, driver_above_wheel_well, driver_rear_compartment, passenger_rear_compartment, others
         } = req.body;
-        
-        const isTruckExist = await Truck.findOne({truck_number});
+        const adminData = await User.findById(req.userID);
+        const isTruckExist = await Truck.findOne({truck_number, departmentID:adminData.departmentID});
         if(!isTruckExist) throw new NotFoundError("Invalid Truck Number");
 
         await isTruckExist.update(truck_number, driver_front_compartment, driver_second_compartment, driver_above_wheel_well, driver_rear_compartment, passenger_rear_compartment, others)
