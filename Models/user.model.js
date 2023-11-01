@@ -50,7 +50,7 @@ userSchema.methods.makeActive = async function(){
         this.active = true;
         await this.save();
     }catch(error){
-        next(error);
+        throw error;
     }
 }
 
@@ -59,7 +59,7 @@ userSchema.methods.makeDeactive = async function(){
         this.active = false;
         await this.save();
     }catch(error){
-        next(error);
+        throw error;
     }
 }
 

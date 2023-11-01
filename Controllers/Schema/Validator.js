@@ -50,6 +50,29 @@ const changePasswordSchema =  Joi.object({
     token:Joi.string().required().messages({
         'any.only':"Token Not Found!"
     })
+});
+
+
+//Equipment Schema
+const equipmentSchema = Joi.object({
+    name:Joi.string().min(2).required(),
+    description:Joi.string().min(20).required(),
+    howtouse:Joi.string().min(10).required(),
+    
+});
+const createtruckSchema = Joi.object({
+    truck_number:Joi.string().min(3).required()
+});
+
+const updatetruckSchema = Joi.object({
+    truck_number:Joi.string().required(),
+    driver_front_compartment:Joi.array().required(),
+    driver_second_compartment:Joi.array().required(),
+    driver_above_wheel_well:Joi.array().required(),
+    driver_rear_compartment:Joi.array().required(),
+    passenger_rear_compartment:Joi.array().required(),
+    others:Joi.array().required()
+
 })
 
 module.exports = {
@@ -59,5 +82,8 @@ module.exports = {
     adminApproveSchema,
     masterSignupSchema,
     masterLoginSchema,
-    changePasswordSchema
+    changePasswordSchema,
+    equipmentSchema,
+    createtruckSchema,
+    updatetruckSchema
 }

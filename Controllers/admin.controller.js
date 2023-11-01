@@ -1,8 +1,11 @@
 const { BadRequestError, NotFoundError, AuthError, Conflict, ForbiddenError } = require("../Error/error");
 const Department = require("../Models/department.model");
+const Equipment = require("../Models/equipment.model");
 const Notification = require("../Models/notification.model");
+const Truck = require("../Models/truck.model");
 const User = require("../Models/user.model");
-const { adminApproveSchema } = require("./Schema/Validator");
+const { adminApproveSchema, equipmentSchema, createtruckSchema, updatetruckSchema } = require("./Schema/Validator");
+const multer = require('multer');
 
 const adminSignup = async(req, res, next)=>{
     try{
@@ -165,6 +168,7 @@ const userApprove = async (req, res, next)=>{
     }
 }
 
+//remove the user
 const removeUser = async (req, res, next)=>{
     try{
         const userID = req.query.id;
@@ -206,13 +210,121 @@ const removeUser = async (req, res, next)=>{
     }
 }
 
+//It just a simple function which give the admin detail to the client
+const setAdmin = async(req, res, next)=>{
+    try {
+        const ID = req.userID;
+        if(!ID) throw new BadRequestError("invalid user ID");
+        
+        const adminData = await User.findById(ID, {firstname:1, lastname:1, admin:1, user_ID:1});
+        if(!adminData) throw new NotFoundError("Admin Not found");
+        
+        res.status(200).send({success:true, message:"Permission Grant", data:adminData});
+    } catch (error) {
+        next(error);
+    }
+}
+
+//--------------create equipment---------------------
+const createEquipment = async(req, res, next)=>{
+    try{
+        const {error} = equipmentSchema.validate(req.body);
+        if(error) throw new BadRequestError(error.details[0].message);
+        
+        const adminData = await User.findById(req.userID);
+        
+        if (!adminData) throw new AuthError("invalid User"); 
 
 
+        const {name, description, howtouse} = req.body;
+        const image = req.filename;
+        const newEquipment = new Equipment({
+            equipment_name:name, equipment_image:image, description, how_to_use:howtouse, departmentID:adminData.departmentID
+        });
+
+        await newEquipment.save();
+        res.status(201).send({success:true, message:"Equipment added successfully!"});
+        
+    }catch(error){
+        next(error);
+    }
+}
+
+const equipmentsFolder = multer.diskStorage({
+    destination: (req, file, cb) => {
+      cb(null, 'uploads/equipments/');
+    },
+    filename: (req, file, cb) => {
+        let filesplit = file.originalname.split('.');  // Extract file extension
+        let customFileName = filesplit[0] + Date.now(); // Use the provided filename or fallback to the current timestamp
+        let fileExtension = filesplit[1];
+        req.filename = `EQP-${customFileName}.${fileExtension}`;
+        cb(null, `EQP-${customFileName}.${fileExtension}`);
+    }
+  });
+  
+const uploadEquipmentImage = multer({ storage: equipmentsFolder });
+
+//----------------------------------------------------
+
+//--------------create truck--------------------------
+const createTruck = async(req, res, next)=>{
+    try {
+        const {error} = createtruckSchema.validate(req.body);
+        if(error) throw new BadRequestError(error.details[0].message);
+
+        const adminID = req.userID;
+        const {truck_number} = req.body;
+        
+        const adminData = await User.findById(adminID);
+        if(!adminData) throw new AuthError("Invalid User");
+
+        const isExist = await Truck.findOne({truck_number:truck_number.toUpperCase()});
+        if(isExist) throw new Conflict("Truck Already Exist"); 
+
+        const newTruck = new Truck({truck_number:truck_number.toUpperCase(), departmentID:adminData.departmentID});
+        await newTruck.save();
+        res.status(201).send({success:true, message:"Truck Added Successfully!"});
+
+    } catch (error) {
+        next(error);
+    }
+}
+
+
+//Add Equipments
+const updateTruck = async(req, res, next)=>{
+    try{
+        const {error} = updatetruckSchema.validate(req.body);
+        if(error)  throw new BadRequestError(error.details[0].message);
+        
+        const {
+            truck_number, driver_front_compartment, driver_second_compartment, driver_above_wheel_well, driver_rear_compartment, passenger_rear_compartment, others
+        } = req.body;
+        
+        const isTruckExist = await Truck.findOne({truck_number});
+        if(!isTruckExist) throw new NotFoundError("Invalid Truck Number");
+
+        await isTruckExist.update(truck_number, driver_front_compartment, driver_second_compartment, driver_above_wheel_well, driver_rear_compartment, passenger_rear_compartment, others)
+        res.status(201).send({success:true, message:"Successfully Updated!"})
+    }catch(error){
+        next(error);
+    }
+}
+
+//----------------------------------------------------
 
 module.exports ={
     adminSignup,
     getAdminNotification,
     userApprove,
-    removeUser
+    removeUser,
+    setAdmin,
+    createEquipment,
+    uploadEquipmentImage,
+    createTruck,
+    updateTruck
+
 
 }
+

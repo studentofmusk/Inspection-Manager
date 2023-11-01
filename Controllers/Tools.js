@@ -33,7 +33,6 @@ const RaiseMail = async(to="", subject="", text="", html="")=>{
     try {
     
         const info = await Transport.sendMail(mailOptions);
-        console.log(info)
         return true;
         
     } catch (error) {

@@ -6,7 +6,6 @@ const User = require('../Models/user.model');
 const userauth = async (req, res, next)=>{
     try{
         const token = req.cookies.usertoken;
-        console.log(token)
         if(!token) throw new AuthError("Invalid Token");
 
         const payload = verifyToken(token);

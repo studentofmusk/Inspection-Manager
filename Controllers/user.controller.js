@@ -158,7 +158,7 @@ const forgotPassword = async(req, res, next)=>{
         //add Token at user Document field
         await isExist.addFgtToken(token);
         
-        await RaiseMail(isExist.email, "Forgot Password Request","You can change your password by clicking this link", `<br/><a href="${process.env.DOMAIN}/forgot-password?id=${token}">click here</a>` );
+        await RaiseMail(isExist.email, "Forgot Password Request","You can change your password by clicking this link", `<h4>You can change your password by clicking this link</h4><br/><a href="${process.env.DOMAIN}/account/changepassword?id=${token}">click here</a>` );
 
         res.status(200).send({success:true, message:"Request Sent successfully! Please check your Mail"});
 
@@ -244,12 +244,31 @@ const getNotifications = async (req, res, next)=>{
         next(error);
     }
 }
-       
+const userTypes = async(req, res)=>{
+    try {
+        const ID = req.userID;
+        if(!ID) throw new BadRequestError("invalid user ID");
+        
+        const userData = await User.findById(ID, {firstname:1, lastname:1, admin:1, user_ID:1});
+        if(!userData) throw new NotFoundError("User Not found");
+        
+        res.status(200).send({success:true, message:"Permission Grant", data:userData});
+    } catch (error) {
+        next(error);
+    }
+}
+const logout = (req, res) => {
+    res.clearCookie("usertoken"); 
+    res.sendStatus(200);
+}
+
 module.exports = {
     signup,
     login,
     sendOTP,
     getNotifications,
     forgotPassword,
-    changePassword
+    changePassword,
+    userTypes,
+    logout
 }
