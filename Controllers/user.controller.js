@@ -5,6 +5,8 @@ const Department = require("../Models/department.model");
 const User = require("../Models/user.model");
 const OTP = require("../Models/OTP.model");
 const Notification = require("../Models/notification.model");
+const Truck = require("../Models/truck.model");
+const Equipment = require("../Models/equipment.model");
 
 
 //------USER Schema-------
@@ -274,7 +276,35 @@ const updateDetails = async(req, res, next)=>{
         next(error);
     }
 }
+const getTrucks  = async(req, res, next)=>{
+    try {
+        const trucks = await Truck.find({}, {truck_number:1});
+        res.status(200).send({success:true, message:"Trucks", data:trucks});
+    } catch (error) {
+        next(error);
+    }
+}
+const getEquipments = async(req, res, next)=>{
+    try {
+        const equipments = await Equipment.find({}, {equipment_name:1, equipment_image:1})
+        res.status(200).send({success:true, message:"Equipments", data:equipments});
+    } catch (error) {
+        next(error);
+    }
+}
+const getEquipment = async(req, res, next)=>{
+    try {
+        const {id} = req.query;
+        if(!id) throw new BadRequestError("Invalid Equipment ID");
+        
+        const equipment = await Equipment.findById(id, {departmentID:0});
+        if(!equipment) throw new NotFoundError("Invalid Equipment ID");
 
+        res.status(200).send({success:true, message:"Equipment Details", data:equipment});
+    } catch (error) {
+        next(error);
+    }
+}
 module.exports = {
     signup,
     login,
@@ -284,5 +314,8 @@ module.exports = {
     changePassword,
     userTypes,
     logout,
-    updateDetails
+    updateDetails,
+    getTrucks,
+    getEquipments,
+    getEquipment
 }

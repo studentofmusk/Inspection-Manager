@@ -25,6 +25,7 @@ PORT = process.env.PORT;
 
 //Static 
 app.use(express.static(path.join(__dirname, "./client/out")));
+app.use(express.static(path.join(__dirname, "./uploads")));
 
 //-----Server Middlewares-----
 app.use(express.urlencoded({extended:true}));
