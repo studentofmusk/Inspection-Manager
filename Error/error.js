@@ -34,6 +34,12 @@ class ForbiddenError extends Error {
         this.statusCode = 403;
     }
 }
+class UnProcessableEntity extends Error {
+    constructor(message) {
+        super(message);
+        this.statusCode = 422;
+    }
+}
 
 module.exports = {
     BadRequestError,
@@ -41,6 +47,7 @@ module.exports = {
     NotFoundError,
     InternalServerError,
     AuthError,
-    ForbiddenError 
+    ForbiddenError,
+    UnProcessableEntity
 
 }

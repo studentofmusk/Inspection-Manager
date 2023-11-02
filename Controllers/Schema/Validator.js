@@ -60,7 +60,15 @@ const equipmentSchema = Joi.object({
     howtouse:Joi.string().min(10).required(),
     
 });
+
+const deleteEquipmentSchema = Joi.object({
+    id:Joi.string().required(),
+})
+
 const createtruckSchema = Joi.object({
+    truck_number:Joi.string().min(3).required()
+});
+const deletetruckSchema = Joi.object({
     truck_number:Joi.string().min(3).required()
 });
 
@@ -85,5 +93,7 @@ module.exports = {
     changePasswordSchema,
     equipmentSchema,
     createtruckSchema,
-    updatetruckSchema
+    updatetruckSchema,
+    deletetruckSchema,
+    deleteEquipmentSchema
 }

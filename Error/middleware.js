@@ -1,4 +1,4 @@
-const { BadRequestError, Conflict, InternalServerError, ForbiddenError, AuthError, NotFoundError } = require("./error")
+const { BadRequestError, Conflict, InternalServerError, ForbiddenError, AuthError, NotFoundError, UnProcessableEntity } = require("./error")
 
 
 const knownErrors = [
@@ -7,7 +7,8 @@ const knownErrors = [
     InternalServerError,
     ForbiddenError,
     AuthError,
-    NotFoundError
+    NotFoundError,
+    UnProcessableEntity
 ]
 
 const errorHandlingMiddleware = (err, req, res, next)=>{

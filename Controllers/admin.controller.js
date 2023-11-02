@@ -1,10 +1,10 @@
-const { BadRequestError, NotFoundError, AuthError, Conflict, ForbiddenError } = require("../Error/error");
+const { BadRequestError, NotFoundError, AuthError, Conflict, ForbiddenError, UnProcessableEntity } = require("../Error/error");
 const Department = require("../Models/department.model");
 const Equipment = require("../Models/equipment.model");
 const Notification = require("../Models/notification.model");
 const Truck = require("../Models/truck.model");
 const User = require("../Models/user.model");
-const { adminApproveSchema, equipmentSchema, createtruckSchema, updatetruckSchema } = require("./Schema/Validator");
+const { adminApproveSchema, equipmentSchema, createtruckSchema, updatetruckSchema, deletetruckSchema, deleteEquipmentSchema } = require("./Schema/Validator");
 const multer = require('multer');
 
 const adminSignup = async(req, res, next)=>{
@@ -226,6 +226,22 @@ const setAdmin = async(req, res, next)=>{
 }
 
 //--------------create equipment---------------------
+
+const equipmentsFolder = multer.diskStorage({
+    destination: (req, file, cb) => {
+      cb(null, 'uploads/equipments/');
+    },
+    filename: (req, file, cb) => {
+        let filesplit = file.originalname.split('.');  // Extract file extension
+        let customFileName = filesplit[0] + Date.now(); // Use the provided filename or fallback to the current timestamp
+        let fileExtension = filesplit[1];
+        req.filename = `EQP-${customFileName}.${fileExtension}`;
+        cb(null, `EQP-${customFileName}.${fileExtension}`);
+    }
+});
+  
+const uploadEquipmentImage = multer({ storage: equipmentsFolder });
+
 const createEquipment = async(req, res, next)=>{
     try{
         const {error} = equipmentSchema.validate(req.body);
@@ -250,20 +266,94 @@ const createEquipment = async(req, res, next)=>{
     }
 }
 
-const equipmentsFolder = multer.diskStorage({
-    destination: (req, file, cb) => {
-      cb(null, 'uploads/equipments/');
-    },
-    filename: (req, file, cb) => {
-        let filesplit = file.originalname.split('.');  // Extract file extension
-        let customFileName = filesplit[0] + Date.now(); // Use the provided filename or fallback to the current timestamp
-        let fileExtension = filesplit[1];
-        req.filename = `EQP-${customFileName}.${fileExtension}`;
-        cb(null, `EQP-${customFileName}.${fileExtension}`);
+//Add Equipments
+
+const deleteEquipment = async(req, res, next)=>{
+    try{
+        const { error } = deleteEquipmentSchema.validate(req.body);
+        if(error) throw new BadRequestError(error.details[0].message);
+        
+        const {id} = req.body;
+        const isExist = await Equipment.findById(id);
+        if(!isExist) throw new NotFoundError("Invalid Equipment ID");
+        
+        
+
+        const isAttached = await Truck.aggregate([
+            {
+              $match: {
+                $or: [
+                  {
+                    "driver_front_compartment": {
+                      $elemMatch: {
+                        $elemMatch: {
+                          $eq: isExist.id
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "driver_second_compartment": {
+                      $elemMatch: {
+                        $elemMatch: {
+                          $eq: isExist.id
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "driver_above_wheel_well": {
+                      $elemMatch: {
+                        $elemMatch: {
+                          $eq: isExist.id
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "driver_rear_compartment": {
+                      $elemMatch: {
+                        $elemMatch: {
+                          $eq: isExist.id
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "passenger_rear_compartment": {
+                      $elemMatch: {
+                        $elemMatch: {
+                          $eq: isExist.id
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "others": {
+                      $elemMatch: {
+                        $elemMatch: {
+                          $eq: isExist.id
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]);
+         
+        if (isAttached.length > 0) throw new UnProcessableEntity("It is already attached in some Truck. Please remove it and try to delete again!");
+
+        const isDelete = await Equipment.findByIdAndDelete(isExist.id)
+        if(!isDelete) throw new NotFoundError("No Equipment related to the given ID");
+        res.status(202).send({success:true, message:"Equipment Removed Successfully!"});
+
+
+    }catch(error){
+        next(error);
     }
-  });
-  
-const uploadEquipmentImage = multer({ storage: equipmentsFolder });
+}
+
 
 //----------------------------------------------------
 
@@ -290,7 +380,22 @@ const createTruck = async(req, res, next)=>{
         next(error);
     }
 }
-
+//delete Truck
+const deleteTruck = async(req, res, next)=>{
+    try{
+        const {error} = deletetruckSchema.validate(req.body);
+        if(error)  throw new BadRequestError(error.details[0].message);
+        
+        const { truck_number} = req.body;
+        const adminData = await User.findById(req.userID);
+        if(!adminData) throw new AuthError("Invalid User");
+        const isDeleted  = await Truck.findOneAndDelete({truck_number, departmentID:adminData.departmentID});
+        if(!isDeleted) throw new NotFoundError("Invalid Truck Number!"); 
+        res.status(201).send({success:true, message:`Truck (${truck_number}) Removed Successfully!`})
+    }catch(error){
+        next(error);
+    }
+}
 
 //Add Equipments
 const updateTruck = async(req, res, next)=>{
@@ -302,6 +407,7 @@ const updateTruck = async(req, res, next)=>{
             truck_number, driver_front_compartment, driver_second_compartment, driver_above_wheel_well, driver_rear_compartment, passenger_rear_compartment, others
         } = req.body;
         const adminData = await User.findById(req.userID);
+        if(!adminData) throw new AuthError("Invalid User");
         const isTruckExist = await Truck.findOne({truck_number, departmentID:adminData.departmentID});
         if(!isTruckExist) throw new NotFoundError("Invalid Truck Number");
 
@@ -323,8 +429,9 @@ module.exports ={
     createEquipment,
     uploadEquipmentImage,
     createTruck,
-    updateTruck
-
+    updateTruck,
+    deleteTruck,
+    deleteEquipment
 
 }
 
