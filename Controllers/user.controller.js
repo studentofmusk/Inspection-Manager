@@ -1,6 +1,6 @@
 const { BadRequestError, InternalServerError, Conflict, NotFoundError, AuthError, ForbiddenError } = require("../Error/error");
 const { RaiseMail, RaiseOTP, DecryptAndCheck, generateToken, verifyToken} = require("./Tools")
-const { userSignupSchema, userLoginSchema, changePasswordSchema } = require("./Schema/Validator");
+const { userSignupSchema, userLoginSchema, changePasswordSchema, updateDetailsSchema } = require("./Schema/Validator");
 const Department = require("../Models/department.model");
 const User = require("../Models/user.model");
 const OTP = require("../Models/OTP.model");
@@ -29,7 +29,6 @@ const createUserID = async()=>{
         throw error
     }
 }
-
 const sendOTP  = async (req, res, next)=>{
     try{
         const email = req.query.email;
@@ -101,7 +100,6 @@ const signup = async(req, res, next)=>{
         next(error)
     }
 }
-
 // Login User Account
 const login = async(req, res, next)=>{
     try {
@@ -142,7 +140,6 @@ const login = async(req, res, next)=>{
         next(error);
     }
 }
-
 const forgotPassword = async(req, res, next)=>{
     try{
         const email = req.query.email;
@@ -166,7 +163,6 @@ const forgotPassword = async(req, res, next)=>{
         next(error);
     }
 }
-
 const changePassword = async (req, res, next)=>{
     try{
         //Schema Validation
@@ -261,6 +257,23 @@ const logout = (req, res) => {
     res.clearCookie("usertoken"); 
     res.sendStatus(200);
 }
+const updateDetails = async(req, res, next)=>{
+    try {
+        const {error} = updateDetailsSchema.validate(req.body);
+        if(error) throw new BadRequestError(error.details[0].message);
+
+        const {firstname, lastname} = req.body;
+        const userID = req.userID;
+        console.log(userID)
+        const isExist =await User.findByIdAndUpdate(userID, {firstname, lastname});
+        if(!isExist) throw new NotFoundError("Unable to Update!");
+
+        res.status(201).send({success:true, message:"Updated successfully!"});
+        
+    } catch (error) {
+        next(error);
+    }
+}
 
 module.exports = {
     signup,
@@ -270,5 +283,6 @@ module.exports = {
     forgotPassword,
     changePassword,
     userTypes,
-    logout
+    logout,
+    updateDetails
 }

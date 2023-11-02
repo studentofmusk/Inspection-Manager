@@ -12,6 +12,10 @@ const userSignupSchema = Joi.object({
     departmentID:Joi.string().required(),
     otp:Joi.number().required()
 });
+const updateDetailsSchema = Joi.object({
+    firstname:Joi.string().required(),
+    lastname:Joi.string().required(),
+})
 
 const userLoginSchema= Joi.object({
     email:Joi.string().email().required(),
@@ -95,5 +99,6 @@ module.exports = {
     createtruckSchema,
     updatetruckSchema,
     deletetruckSchema,
-    deleteEquipmentSchema
+    deleteEquipmentSchema,
+    updateDetailsSchema
 }

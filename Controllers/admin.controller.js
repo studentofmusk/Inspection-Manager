@@ -242,6 +242,7 @@ const equipmentsFolder = multer.diskStorage({
   
 const uploadEquipmentImage = multer({ storage: equipmentsFolder });
 
+//Create Equipment
 const createEquipment = async(req, res, next)=>{
     try{
         const {error} = equipmentSchema.validate(req.body);
@@ -267,7 +268,6 @@ const createEquipment = async(req, res, next)=>{
 }
 
 //Add Equipments
-
 const deleteEquipment = async(req, res, next)=>{
     try{
         const { error } = deleteEquipmentSchema.validate(req.body);
@@ -354,10 +354,11 @@ const deleteEquipment = async(req, res, next)=>{
     }
 }
 
-
 //----------------------------------------------------
 
 //--------------create truck--------------------------
+
+//create Truck
 const createTruck = async(req, res, next)=>{
     try {
         const {error} = createtruckSchema.validate(req.body);
@@ -397,7 +398,7 @@ const deleteTruck = async(req, res, next)=>{
     }
 }
 
-//Add Equipments
+//Update truck
 const updateTruck = async(req, res, next)=>{
     try{
         const {error} = updatetruckSchema.validate(req.body);
