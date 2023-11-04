@@ -56,14 +56,20 @@ const changePasswordSchema =  Joi.object({
     })
 });
 
-
 //Equipment Schema
 const equipmentSchema = Joi.object({
     name:Joi.string().min(2).required(),
     description:Joi.string().min(20).required(),
     howtouse:Joi.string().min(10).required(),
-    
 });
+//Equipment Schema
+const updateequipmentSchema = Joi.object({
+    name:Joi.string().min(2).required(),
+    description:Joi.string().min(20).required(),
+    howtouse:Joi.string().min(10).required(),
+    image:Joi.string()
+});
+
 
 const deleteEquipmentSchema = Joi.object({
     id:Joi.string().required(),
@@ -100,5 +106,6 @@ module.exports = {
     updatetruckSchema,
     deletetruckSchema,
     deleteEquipmentSchema,
-    updateDetailsSchema
+    updateDetailsSchema,
+    updateequipmentSchema
 }

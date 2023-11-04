@@ -130,7 +130,7 @@ const login = async(req, res, next)=>{
             admin:user.admin,
             userID:user.user_ID
         };
-        const token = generateToken(payload);        
+        const token = generateToken(payload, expire="365d");        
         res.cookie("usertoken", token, {
             httpOnly:true
         });
@@ -218,7 +218,14 @@ const getNotifications = async (req, res, next)=>{
             ]
         },
         {
-            redirect:0
+            "from":1,
+            "to": 1,
+            "sender_type": 1,
+            "receiver_type": 1,
+            "title": 1,
+            "notification_type": 1,
+            "createdAt":1,
+            "status": 1,
         }
         );
         const outbox = await Notification.find({
@@ -233,7 +240,13 @@ const getNotifications = async (req, res, next)=>{
             ]
         },
         {
-            redirect:0
+        "from":1,
+        "to": 1,
+        "sender_type": 1,
+        "receiver_type": 1,
+        "title": 1,
+        "notification_type": 1,
+        "status": 1,
         }
         );
 
@@ -284,6 +297,19 @@ const getTrucks  = async(req, res, next)=>{
         next(error);
     }
 }
+const getTruck = async(req, res, next)=>{
+    try{
+        const {id} = req.query;
+        if(!id) throw new BadRequestError("Invalid Equipment ID");
+        
+        const truck = await Truck.findById(id);
+        if(!truck) throw new NotFoundError("Invalid Equipment ID");
+
+        res.status(200).send({success:true, message:"Truck Details", data:truck});
+    }catch(error){
+        next(error);
+    }
+}
 const getEquipments = async(req, res, next)=>{
     try {
         const equipments = await Equipment.find({}, {equipment_name:1, equipment_image:1})
@@ -316,6 +342,7 @@ module.exports = {
     logout,
     updateDetails,
     getTrucks,
+    getTruck,
     getEquipments,
-    getEquipment
+    getEquipment,
 }

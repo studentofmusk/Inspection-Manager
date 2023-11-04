@@ -4,7 +4,7 @@ const Equipment = require("../Models/equipment.model");
 const Notification = require("../Models/notification.model");
 const Truck = require("../Models/truck.model");
 const User = require("../Models/user.model");
-const { adminApproveSchema, equipmentSchema, createtruckSchema, updatetruckSchema, deletetruckSchema, deleteEquipmentSchema } = require("./Schema/Validator");
+const { adminApproveSchema, equipmentSchema, createtruckSchema, updatetruckSchema, deletetruckSchema, deleteEquipmentSchema, updateequipmentSchema } = require("./Schema/Validator");
 const multer = require('multer');
 
 const adminSignup = async(req, res, next)=>{
@@ -229,7 +229,7 @@ const setAdmin = async(req, res, next)=>{
 
 const equipmentsFolder = multer.diskStorage({
     destination: (req, file, cb) => {
-      cb(null, 'uploads/equipments/');
+      cb(null, 'uploads/equipmentImages/');
     },
     filename: (req, file, cb) => {
         let filesplit = file.originalname.split('.');  // Extract file extension
@@ -266,6 +266,41 @@ const createEquipment = async(req, res, next)=>{
         next(error);
     }
 }
+
+//update Equipment
+const updateEquipment = async(req, res, next)=>{
+    try{
+        const {error} = updateequipmentSchema.validate(req.body);
+        if(error) throw new BadRequestError(error.details[0].message);
+        
+        const adminData = await User.findById(req.userID);
+        
+        if (!adminData) throw new AuthError("invalid User"); 
+
+        const id = req.query.id;
+        const isimg = req.query.isimg;
+        if(!id) throw new BadRequestError("Invalid ID");
+        const {name, description, howtouse} = req.body;
+        const image = req.filename;
+        if(isimg === "1"){
+
+            const updateEquipment = await Equipment.findByIdAndUpdate(id, {
+                equipment_name:name, equipment_image:image, description, how_to_use:howtouse
+            });
+        }else{
+            const updateEquipment = await Equipment.findByIdAndUpdate(id, {
+                equipment_name:name, description, how_to_use:howtouse
+            });
+        }
+        if(!updateEquipment) throw new NotFoundError("Unable to process");
+
+        res.status(201).send({success:true, message:"Equipment Updated successfully!"});
+        
+    }catch(error){
+        next(error);
+    }
+}
+
 
 //Add Equipments
 const deleteEquipment = async(req, res, next)=>{
@@ -432,7 +467,8 @@ module.exports ={
     createTruck,
     updateTruck,
     deleteTruck,
-    deleteEquipment
+    deleteEquipment,
+    updateEquipment
 
 }
 
