@@ -41,6 +41,12 @@ app.use("/api/admin", admin_routes);
 app.use("/api/master/admin", master_routes)
 
 
+
+// Frontend Routes
+app.get("/", (req, res)=>{
+    res.sendFile(path.join(__dirname, "./client/out", "index.html"));
+})
+
 app.get("/account/login", (req, res)=>{
     res.sendFile(path.join(__dirname, "./client/out", "account/login.html"));
 })
@@ -96,9 +102,29 @@ app.get("/trucks/delete/", (req, res)=>{
 app.get("/trucks/edit/", (req, res)=>{
     res.sendFile(path.join(__dirname, "./client/out", "trucks/edit.html"));
 })
-app.get("/", (req, res)=>{
-    res.sendFile(path.join(__dirname, "./client/out", "index.html"));
+
+app.get("/settings/", (req, res)=>{
+    res.sendFile(path.join(__dirname, "./client/out", "settings.html"));
 })
+app.get("/settings/editprofile/", (req, res)=>{
+    res.sendFile(path.join(__dirname, "./client/out", "settings/editprofile.html"));
+})
+app.get("/settings/adminrequest/", (req, res)=>{
+    res.sendFile(path.join(__dirname, "./client/out", "settings/adminrequest.html"));
+})
+
+app.get("/notifications/", (req, res)=>{
+    res.sendFile(path.join(__dirname, "./client/out", "notifications.html"));
+})
+app.get("/notifications/list/", (req, res)=>{
+    res.sendFile(path.join(__dirname, "./client/out", "notifications/list.html"));
+})
+app.get("/notifications/read/", (req, res)=>{
+    res.sendFile(path.join(__dirname, "./client/out", "notifications/read.html"));
+})
+
+
+
 app.get("*", (req, res)=>{
     res.sendFile(path.join(__dirname, "./client/out", "404.html"));
 })

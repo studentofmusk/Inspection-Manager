@@ -196,10 +196,15 @@ const changePassword = async (req, res, next)=>{
 }
 const getNotifications = async (req, res, next)=>{
     try{
-        console.log("here");
+        let id = req.query.id;
+
         const ID = req.userID;
         if(!ID) throw new BadRequestError("User ID not found");
-
+        if(id === "1"){
+            id= 1;
+        }else{
+            id=0
+        }
         const isUserExist = await User.findById(ID);
         if(!isUserExist) throw new NotFoundError("Invalid User ID");
 
@@ -213,7 +218,8 @@ const getNotifications = async (req, res, next)=>{
                     ]
                 },
                 {
-                    departmentID:isUserExist.departmentID
+                    departmentID:isUserExist.departmentID,
+                    sender_type:id
                 }
             ]
         },
@@ -228,29 +234,31 @@ const getNotifications = async (req, res, next)=>{
             "status": 1,
         }
         );
-        const outbox = await Notification.find({
-            $and:
-            [
-                {
-                    from:isUserExist.user_ID
-                },
-                {
-                    departmentID:isUserExist.departmentID
-                }
-            ]
-        },
-        {
-        "from":1,
-        "to": 1,
-        "sender_type": 1,
-        "receiver_type": 1,
-        "title": 1,
-        "notification_type": 1,
-        "status": 1,
-        }
-        );
+        // const outbox = await Notification.find({
+        //     $and:
+        //     [
+        //         {
+        //             from:isUserExist.user_ID
+        //         },
+        //         {
+        //             departmentID:isUserExist.departmentID,
+        //             receiver_type:id
+        //         }
+        //     ]
+        // },
+        // {
+        // "from":1,
+        // "to": 1,
+        // "sender_type": 1,
+        // "receiver_type": 1,
+        // "title": 1,
+        // "notification_type": 1,
+        // "createdAt":1,
+        // "status": 1,
+        // }
+        // );
 
-        res.status(200).send({success:true, message:"Notification Fetched!", data:{inbox, outbox}});
+        res.status(200).send({success:true, message:"Notification Fetched!", data:{inbox}});
     }catch(error){
         next(error);
     }
@@ -279,13 +287,25 @@ const updateDetails = async(req, res, next)=>{
 
         const {firstname, lastname} = req.body;
         const userID = req.userID;
-        console.log(userID)
+        // console.log(userID)
         const isExist =await User.findByIdAndUpdate(userID, {firstname, lastname});
         if(!isExist) throw new NotFoundError("Unable to Update!");
 
         res.status(201).send({success:true, message:"Updated successfully!"});
         
     } catch (error) {
+        next(error);
+    }
+}
+const getDetails = async(req, res, next)=>{
+    try{
+        const userID = req.userID;
+        if(!userID) throw new AuthError("Invalid User");
+
+        const userData = await User.findById(userID, {password:0,fgtToken:0});
+        if(!userData) throw new NotFoundError("Invalid User");
+        res.status(200).send({success:true, message:"User Data", data:userData});
+    }catch(error){
         next(error);
     }
 }
@@ -345,4 +365,5 @@ module.exports = {
     getTruck,
     getEquipments,
     getEquipment,
+    getDetails
 }

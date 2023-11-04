@@ -9,19 +9,15 @@ const multer = require('multer');
 
 const adminSignup = async(req, res, next)=>{
     try{
-        const {error} = adminApproveSchema.validate(req.body);
-        if(error) throw new BadRequestError(error.details[0].message);
+        const userID = req.userID;
 
-        const {departmentID, userID} = req.body;
-
-        const isDeptExist = await Department.findOne({dept_ID:departmentID});
+        const isUserExist = await User.findById(userID);
+        if(!isUserExist) throw new NotFoundError("Invalid User ID!")    
+        const isDeptExist = await Department.findOne({dept_ID:isUserExist.departmentID});
         if(!isDeptExist) throw new NotFoundError("Invalid Department ID!");
         
-        const isUserExist = await User.findOne({user_ID:userID});
-        if(!isUserExist) throw new NotFoundError("Invalid User ID!")    
-
         const raiseRequest = new Notification({
-            from:userID,
+            from:isUserExist.user_ID,
             sender_type:0,   //user
             to:"master",
             receiver_type:2,  //master
@@ -188,7 +184,7 @@ const removeUser = async (req, res, next)=>{
         if(isDeptExist.captain_ID !== isAdminExist.user_ID) throw new ForbiddenError("You are not Captain for the Given User's deparment!");
 
         if(isAdminExist.departmentID !== isUserExist.departmentID) throw new BadRequestError("Admin and User Department are not Same. User from other department!");
-        if(isAdminExist.user_ID === isUserExist.user_ID) throw new BadRequestError("Your unable to Remove your Self");
+        if(isAdminExist.user_ID === isUserExist.user_ID) throw new BadRequestError("You are unable to Remove your Self");
 
         await isUserExist.makeDeactive();
         
@@ -389,7 +385,6 @@ const deleteEquipment = async(req, res, next)=>{
     }
 }
 
-//----------------------------------------------------
 
 //--------------create truck--------------------------
 
@@ -404,12 +399,26 @@ const createTruck = async(req, res, next)=>{
         
         const adminData = await User.findById(adminID);
         if(!adminData) throw new AuthError("Invalid User");
+        const departmentDetail = await Department.findOne({dept_ID:adminData.departmentID})
+        if (!departmentDetail) throw new NotFoundError("Invalid Department!")
 
         const isExist = await Truck.findOne({truck_number:truck_number.toUpperCase(), departmentID:adminData.departmentID});
         if(isExist) throw new Conflict("Truck Already Exist"); 
 
         const newTruck = new Truck({truck_number:truck_number.toUpperCase(), departmentID:adminData.departmentID});
         await newTruck.save();
+        const raiseNotification = new Notification({
+            from:adminData.user_ID,
+            sender_type:1,   //admin
+            to:"all",
+            receiver_type:0,  //user
+            departmentID: adminData.departmentID,
+            title:"New Truck Added",
+            message:`Now, You have access to Inspect and Explore thing from this Truck. \nDepartment name:${departmentDetail.name}\nDepartment ID:${departmentDetail.dept_ID}\n\nTruck Number:${truck_number.toUpperCase()} `,
+            redirect:`/`,
+            notification_type:0, //normal
+        });
+        await raiseNotification.save();
         res.status(201).send({success:true, message:"Truck Added Successfully!"});
 
     } catch (error) {
@@ -453,6 +462,27 @@ const updateTruck = async(req, res, next)=>{
         next(error);
     }
 }
+//----------------FireFighters-----------------------
+
+const getFireFighters = async(req, res, next)=>{
+    try{
+        const adminID = req.userID;
+        if (!adminID) throw new AuthError("Admin ID not found");
+        const adminDetails = await User.findById(adminID);
+        if(!adminDetails) throw new NotFoundError("User Not Found");
+
+        const firefighters = await User.find({departmentID:adminDetails.departmentID}, {
+            user_ID:1, 
+            firstname:1,
+            lastname:1,
+            email:1,
+            active:1
+            });
+        res.status(200).send({success:true, message:"firefighters list", data:firefighters});
+    }catch(error){
+        next(error);
+    }
+}
 
 //----------------------------------------------------
 
@@ -468,7 +498,8 @@ module.exports ={
     updateTruck,
     deleteTruck,
     deleteEquipment,
-    updateEquipment
+    updateEquipment,
+    getFireFighters
 
 }
 
