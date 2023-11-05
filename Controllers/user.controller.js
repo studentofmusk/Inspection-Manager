@@ -1,12 +1,13 @@
 const { BadRequestError, InternalServerError, Conflict, NotFoundError, AuthError, ForbiddenError } = require("../Error/error");
 const { RaiseMail, RaiseOTP, DecryptAndCheck, generateToken, verifyToken} = require("./Tools")
-const { userSignupSchema, userLoginSchema, changePasswordSchema, updateDetailsSchema } = require("./Schema/Validator");
+const { userSignupSchema, userLoginSchema, changePasswordSchema, updateDetailsSchema, inspectionUploadSchema } = require("./Schema/Validator");
 const Department = require("../Models/department.model");
 const User = require("../Models/user.model");
 const OTP = require("../Models/OTP.model");
 const Notification = require("../Models/notification.model");
 const Truck = require("../Models/truck.model");
 const Equipment = require("../Models/equipment.model");
+const Inspection = require("../Models/inspection.model");
 
 
 //------USER Schema-------
@@ -263,6 +264,26 @@ const getNotifications = async (req, res, next)=>{
         next(error);
     }
 }
+
+const getNotification = async(req, res, next)=>{
+    try{
+        const id = req.query.id;
+        if(!id) throw new BadRequestError("Invalid ID");
+        
+        const userDetails = await User.findById(req.userID, {user_ID:1, departmentID:1});
+        if(!userDetails) throw new AuthError("Invalid User");
+        
+        const notification = await Notification.findOne({_id:id, departmentID:userDetails.departmentID});
+        
+        if(!notification) throw new NotFoundError("Invalid ID");
+        if(notification.to !== userDetails.user_ID && notification.to !=="all") throw new AuthError("Invalid ID");
+
+        res.status(200).send({success:true, message:"Message Details", data:notification});
+
+    }catch(error){
+        next(error);
+    }
+}
 const userTypes = async(req, res)=>{
     try {
         const ID = req.userID;
@@ -311,7 +332,8 @@ const getDetails = async(req, res, next)=>{
 }
 const getTrucks  = async(req, res, next)=>{
     try {
-        const trucks = await Truck.find({}, {truck_number:1});
+        const userDetails = await User.findById(req.userID);
+        const trucks = await Truck.find({departmentID:userDetails.departmentID}, {truck_number:1});
         res.status(200).send({success:true, message:"Trucks", data:trucks});
     } catch (error) {
         next(error);
@@ -321,8 +343,8 @@ const getTruck = async(req, res, next)=>{
     try{
         const {id} = req.query;
         if(!id) throw new BadRequestError("Invalid Equipment ID");
-        
-        const truck = await Truck.findById(id);
+        const userDetails = await User.findById(req.userID);
+        const truck = await Truck.findOne({_id:id, departmentID:userDetails.departmentID});
         if(!truck) throw new NotFoundError("Invalid Equipment ID");
 
         res.status(200).send({success:true, message:"Truck Details", data:truck});
@@ -332,7 +354,8 @@ const getTruck = async(req, res, next)=>{
 }
 const getEquipments = async(req, res, next)=>{
     try {
-        const equipments = await Equipment.find({}, {equipment_name:1, equipment_image:1})
+        const userDetails = await User.findById(req.userID);
+        const equipments = await Equipment.find({departmentID:userDetails.departmentID}, {equipment_name:1, equipment_image:1})
         res.status(200).send({success:true, message:"Equipments", data:equipments});
     } catch (error) {
         next(error);
@@ -342,8 +365,8 @@ const getEquipment = async(req, res, next)=>{
     try {
         const {id} = req.query;
         if(!id) throw new BadRequestError("Invalid Equipment ID");
-        
-        const equipment = await Equipment.findById(id, {departmentID:0});
+        const userDetails = await User.findById(req.userID);
+        const equipment = await Equipment.findOne({_id:id,departmentID:userDetails.departmentID}, {departmentID:0});
         if(!equipment) throw new NotFoundError("Invalid Equipment ID");
 
         res.status(200).send({success:true, message:"Equipment Details", data:equipment});
@@ -351,11 +374,204 @@ const getEquipment = async(req, res, next)=>{
         next(error);
     }
 }
+const submitInspection = async(req,res, next)=>{
+    try{
+        const {error} = inspectionUploadSchema.validate(req.body);
+        if(error) throw new BadRequestError(error.details[0].message);
+        const userID = req.userID;
+        if(!userID) throw new AuthError("Invalid User");
+        const userDetails = await User.findById(userID);
+        if(!userDetails) throw new NotFoundError("User Not Found");
+
+        let {
+            truck_number,
+            truck_id,
+            driver_front_compartment,
+            driver_second_compartment,
+            driver_above_wheel_well,
+            driver_rear_compartment,
+            passenger_rear_compartment,
+            others
+        } = req.body;
+
+        driver_front_compartment  = await Promise.all(
+        driver_front_compartment =  driver_front_compartment.map(async(element)=>{
+            let equipment = await Equipment.findById(element[0], {equipment_image:1, equipment_name:1});
+            if(equipment){
+                let copyele =  [...element];
+                copyele.splice(0, 1, equipment.equipment_name, equipment.equipment_image);
+                return copyele;
+            }else{
+                let copyele =  [...element];
+                copyele.splice(0, 1, "", "");
+                return copyele;
+                
+            }
+        })
+        )
+        
+
+        driver_second_compartment = await Promise.all(
+        driver_second_compartment =  driver_second_compartment.map(async(element)=>{
+            let equipment = await Equipment.findById(element[0], {equipment_image:1, equipment_name:1});
+            if(equipment){
+                let copyele =  [...element];
+                copyele.splice(0, 1, equipment.equipment_name, equipment.equipment_image);
+                return copyele;
+            }else{
+                let copyele =  [...element];
+                copyele.splice(0, 1, "", "");
+                return copyele;
+                
+            }
+        })
+        )
+         
+
+        driver_above_wheel_well = await Promise.all(
+        driver_above_wheel_well =  driver_above_wheel_well.map(async(element)=>{
+            let equipment = await Equipment.findById(element[0], {equipment_image:1, equipment_name:1});
+            if(equipment){
+                let copyele =  [...element];
+                copyele.splice(0, 1, equipment.equipment_name, equipment.equipment_image);
+                return copyele;
+            }else{
+                let copyele =  [...element];
+                copyele.splice(0, 1, "", "");
+                return copyele;
+                
+            }
+        })
+        )
+        driver_rear_compartment = await Promise.all(
+        driver_rear_compartment =  driver_rear_compartment.map(async(element)=>{
+            let equipment = await Equipment.findById(element[0], {equipment_image:1, equipment_name:1});
+            if(equipment){
+                let copyele =  [...element];
+                copyele.splice(0, 1, equipment.equipment_name, equipment.equipment_image);
+                return copyele;
+            }else{
+                let copyele =  [...element];
+                copyele.splice(0, 1, "", "");
+                return copyele;
+                
+            }
+        })
+        )
+         
+        passenger_rear_compartment = await Promise.all(
+        passenger_rear_compartment =  passenger_rear_compartment.map(async(element)=>{
+            let equipment = await Equipment.findById(element[0], {equipment_image:1, equipment_name:1});
+            if(equipment){
+                let copyele =  [...element];
+                copyele.splice(0, 1, equipment.equipment_name, equipment.equipment_image);
+                return copyele;
+            }else{
+                let copyele =  [...element];
+                copyele.splice(0, 1, "", "");
+                return copyele;
+                
+            }
+        })
+        )
+         
+        others = await Promise.all(
+        others =  others.map(async(element)=>{
+            let equipment = await Equipment.findById(element[0], {equipment_image:1, equipment_name:1});
+            if(equipment){
+                let copyele =  [...element];
+                copyele.splice(0, 1, equipment.equipment_name, equipment.equipment_image);
+                return copyele;
+            }else{
+                let copyele =  [...element];
+                copyele.splice(0, 1, "", "");
+                return copyele;
+                
+            }
+        })
+        )
+         
+
+        const isTruckExist = await Truck.findOne({truck_number});
+        if(!isTruckExist) throw new NotFoundError("Invalid Truck");
+
+        const newInspection = new Inspection({
+            name:`${userDetails.firstname} ${userDetails.lastname}`,
+            userID:userDetails.user_ID,
+            truck_number,
+            truck_id,
+            driver_front_compartment,
+            driver_second_compartment,
+            driver_above_wheel_well,
+            driver_rear_compartment,
+            passenger_rear_compartment,
+            others,
+            departmentID:userDetails.departmentID
+
+        });
+        const isSave = await newInspection.save();
+        if(!isSave) throw new InternalServerError("Unable to Submit!");
+
+        const raiseNotification = new Notification({
+            from:userDetails.user_ID,
+            sender_type:0,   //admin
+            to:"all",
+            receiver_type:0,  //user
+            departmentID: userDetails.departmentID,
+            title:`Truck NO: ${truck_number} Inspection Result`,
+            message:`Truck NO: ${truck_number} Inspection was successfully completed. You can see the result at Maitainance page`,
+            redirect:`/maintenance/oldview?id=${isSave._id}`,
+            notification_type:0, //permission
+        });
+        await raiseNotification.save();
+        res.status(201).send({success:true, message:"Successfully Updated!"});
+
+    }catch(error){
+        next(error);
+    }
+}
+
+const getInspectionById = async(req, res, next)=>{
+    try{
+        const id = req.query.id;
+        if(!id) throw new BadRequestError("Truck ID Not Found");
+        const userDetails = await User.findById(req.userID);
+        
+        const inspection = await Inspection.findById(id); 
+        if(!inspection) throw new NotFoundError("Invalid Inspection ID");
+        res.status(200).send({success:true, message:"Inspection Detail", data:inspection})
+    }catch(error){
+        next(error);
+    }
+};
+const getInspectionTruckWise = async(req, res, next)=>{
+    try{
+        const id = req.query.id;
+        if(!id) throw new BadRequestError("Truck ID Not Found");
+        const userDetails = await User.findById(req.userID);
+        let count = req.query.count;
+        let lists = []
+
+        if(count){
+            count = parseInt(count);
+            lists = await Inspection.find({truck_number:id, departmentID:userDetails.departmentID}).sort({createdAt:-1}).limit(count); 
+        }else{
+            lists = await Inspection.find({truck_number:id, departmentID:userDetails.departmentID}).sort({createdAt:-1}); 
+
+        }
+        // const lists = await Inspection.find({truck_number:id, departmentID:userDetails.departmentID})
+        res.status(200).send({success:true, message:"Inspections", data:lists})
+    }catch(error){
+        next(error);
+    }
+}
+
 module.exports = {
     signup,
     login,
     sendOTP,
     getNotifications,
+    getNotification,
     forgotPassword,
     changePassword,
     userTypes,
@@ -365,5 +581,8 @@ module.exports = {
     getTruck,
     getEquipments,
     getEquipment,
-    getDetails
+    getDetails,
+    submitInspection,
+    getInspectionTruckWise,
+    getInspectionById
 }

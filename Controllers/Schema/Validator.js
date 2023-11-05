@@ -92,6 +92,17 @@ const updatetruckSchema = Joi.object({
     others:Joi.array().required()
 
 })
+const inspectionUploadSchema = Joi.object({
+    truck_id:Joi.string().required(),
+    truck_number:Joi.string().required(),
+    driver_front_compartment:Joi.array().required(),
+    driver_second_compartment:Joi.array().required(),
+    driver_above_wheel_well:Joi.array().required(),
+    driver_rear_compartment:Joi.array().required(),
+    passenger_rear_compartment:Joi.array().required(),
+    others:Joi.array().required()
+
+})
 
 module.exports = {
     userSignupSchema,
@@ -107,5 +118,6 @@ module.exports = {
     deletetruckSchema,
     deleteEquipmentSchema,
     updateDetailsSchema,
-    updateequipmentSchema
+    updateequipmentSchema,
+    inspectionUploadSchema
 }
