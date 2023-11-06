@@ -1,5 +1,5 @@
 const { BadRequestError, InternalServerError, Conflict, NotFoundError, AuthError, ForbiddenError } = require("../Error/error");
-const { RaiseMail, RaiseOTP, DecryptAndCheck, generateToken, verifyToken} = require("./Tools")
+const { RaiseMail, RaiseOTP, DecryptAndCheck, generateToken, verifyToken, isDateToday} = require("./Tools")
 const { userSignupSchema, userLoginSchema, changePasswordSchema, updateDetailsSchema, inspectionUploadSchema } = require("./Schema/Validator");
 const Department = require("../Models/department.model");
 const User = require("../Models/user.model");
@@ -14,7 +14,7 @@ const Inspection = require("../Models/inspection.model");
 const createUserID = async()=>{
     try{
         const currentYear = new Date().getFullYear();
-        const latestUser = await User.find({user_ID: new RegExp(`^FFD-${currentYear}`)})
+        const latestUser = await User.find({user_ID: new RegExp(`^EM-${currentYear.toString().slice(2, 4)}`)})
                                      .sort({user_ID: -1})
                                      .limit(1);
         let nextNum;
@@ -26,7 +26,7 @@ const createUserID = async()=>{
             nextNum = '000001';
         }
         
-        return `FFD-${currentYear}-${nextNum}`;
+        return `EM-${currentYear.toString().slice(2, 4)}-${nextNum}`;
 
     }catch(error){
         throw error
@@ -45,7 +45,7 @@ const sendOTP  = async (req, res, next)=>{
             const newOtp = new OTP({email, otp})
             await newOtp.save();
         }
-        res.status(201).send({success:true, message:"OTP sent Successfully!"});
+        res.status(201).send({success:true, message:"The Verification Code sent to your email!"});
 
         
     }catch(error){
@@ -59,7 +59,7 @@ const signup = async(req, res, next)=>{
         const {error} = userSignupSchema.validate(req.body); 
         if(error) throw new BadRequestError(error.details[0].message);
 
-        const {firstname, lastname, email, password, departmentID, otp} = req.body;
+        const {firstname, lastname, email, password, departmentID, otp, isCaptain} = req.body;
 
         //Checking whether the department is Exist or not
         const isDeptExist = await Department.findOne({dept_ID:departmentID});
@@ -75,28 +75,46 @@ const signup = async(req, res, next)=>{
 
         //Creating Unique UserID
         const userID = await createUserID();
-
+        
         //Create new User
         const newUser = new User({
             user_ID:userID, firstname, lastname, departmentID:isDeptExist.dept_ID, email, password            
         })
         await newUser.save();
+        if(isCaptain ===1){
+            
+            //send Notification to department 
+            const raiseRequest = new Notification({
+                from:userID,
+                sender_type:0,   //user
+                to:"master",
+                receiver_type:2,  //department
+                departmentID:isDeptExist.dept_ID,
+                title:"Captain Request",
+                message:`Requesting to grant charge us an Firecaptain(Admin) for \nDepartment name:${isDeptExist.name}\nDepartment ID:${isDeptExist.dept_ID}\n\nUser Details\nFull Name:${newUser.firstname} ${newUser.lastname}\nUser ID:${newUser.user_ID}\nUser Email:${newUser.email}`,
+                redirect:`/master/approve?userID=${newUser.user_ID}&departmentID=${isDeptExist.dept_ID}`,
+                notification_type:1, //permission
+            });
+            await raiseRequest.save();
+            res.status(201).send({success:true, message:"Your Captain/Admin account is being set up. You will receive a notification within 24 hours once it is ready"});
+        }else{
 
-        //send Notification to department 
-        const raiseRequest = new Notification({
-            from:userID,
-            sender_type:0,   //user
-            to:isDeptExist.dept_ID,
-            receiver_type:3,  //department
-            departmentID:isDeptExist.dept_ID,
-            title:"Login Request",
-            message:`Requesting to grant charge us a Fire Fighter (User) for \nDepartment name:${isDeptExist.name}\nDepartment ID:${isDeptExist.dept_ID}\n\nUser Details\nFull Name:${newUser.firstname} ${newUser.lastname}\nUser ID:${newUser.user_ID}`,
-            redirect:`/admin/approve?userID=${newUser.user_ID}&departmentID=${isDeptExist.dept_ID}`,
-            notification_type:1, //permission
-        });
-        await raiseRequest.save();
-
-        res.status(201).send({success:true, message:"User Created Successfully!"});
+            //send Notification to department 
+            const raiseRequest = new Notification({
+                from:userID,
+                sender_type:0,   //user
+                to:isDeptExist.dept_ID,
+                receiver_type:3,  //department
+                departmentID:isDeptExist.dept_ID,
+                title:"Login Request",
+                message:`Requesting to grant charge us a Fire Fighter (User) for \nDepartment name:${isDeptExist.name}\nDepartment ID:${isDeptExist.dept_ID}\n\nUser Details\nFull Name:${newUser.firstname} ${newUser.lastname}\nUser ID:${newUser.user_ID}`,
+                redirect:`/admin/approve?userID=${newUser.user_ID}&departmentID=${isDeptExist.dept_ID}`,
+                notification_type:1, //permission
+            });
+            await raiseRequest.save();
+            res.status(201).send({success:true, message:"Firefighter Created! Contact the captain for approval."});
+        }
+            
 
     }catch(error){
         console.log(error.message)
@@ -131,7 +149,7 @@ const login = async(req, res, next)=>{
             admin:user.admin,
             userID:user.user_ID
         };
-        const token = generateToken(payload, expire="365d");        
+        const token = generateToken(payload, expire=31536000);        
         res.cookie("usertoken", token, {
             httpOnly:true
         });
@@ -264,7 +282,6 @@ const getNotifications = async (req, res, next)=>{
         next(error);
     }
 }
-
 const getNotification = async(req, res, next)=>{
     try{
         const id = req.query.id;
@@ -278,6 +295,7 @@ const getNotification = async(req, res, next)=>{
         if(!notification) throw new NotFoundError("Invalid ID");
         if(notification.to !== userDetails.user_ID && notification.to !=="all") throw new AuthError("Invalid ID");
 
+        await notification.makeSeen();
         res.status(200).send({success:true, message:"Message Details", data:notification});
 
     }catch(error){
@@ -524,7 +542,7 @@ const submitInspection = async(req,res, next)=>{
             notification_type:0, //permission
         });
         await raiseNotification.save();
-        res.status(201).send({success:true, message:"Successfully Updated!"});
+        res.status(201).send({success:true, message:"Inspection Completed Successfully!"});
 
     }catch(error){
         next(error);
@@ -535,11 +553,15 @@ const getInspectionById = async(req, res, next)=>{
     try{
         const id = req.query.id;
         if(!id) throw new BadRequestError("Truck ID Not Found");
+
         const userDetails = await User.findById(req.userID);
-        
-        const inspection = await Inspection.findById(id); 
+        if(!userDetails) throw new AuthError("Invalid User ID");
+
+        const inspection = await Inspection.findOne({_id:id, departmentID:userDetails.departmentID}); 
         if(!inspection) throw new NotFoundError("Invalid Inspection ID");
+
         res.status(200).send({success:true, message:"Inspection Detail", data:inspection})
+
     }catch(error){
         next(error);
     }
@@ -565,6 +587,97 @@ const getInspectionTruckWise = async(req, res, next)=>{
         next(error);
     }
 }
+// const getDashboardDetails = async(req, res, next)=>{
+//     try{
+//         const userDetails = await User.findById(req.userID);
+//         if(!userDetails) throw new AuthError("Invalid User");
+//         const departmentDetails = await Department.findOne({dept_ID:userDetails.departmentID});
+//         if(!departmentDetails) throw new NotFoundError("Department NotFound");
+//         const trucks = await Truck.find({departmentID:userDetails.departmentID}, {truck_number:1});
+//         let inspectedCount = 0;
+//         if(trucks.length>0){
+
+//             trucks.map(async(element)=>{
+//                 let inspection = await Inspection.findOne({ truck_number: element.truck_number, departmentID: userDetails.departmentID }).sort({ createdAt: -1 });
+//                 if(!inspection){
+//                     inspectedCount += 0;
+//                 }else{
+//                     let isToday = isDateToday(inspection.createdAt);
+//                     inspectedCount += isToday;
+//                     console.log(isToday)
+//                 }            
+//             })  
+//         }
+//         console.log(inspectedCount);
+//         res.status(200).send({success:true, message:"Details", data:inspectedCount});
+
+//     }catch(error){
+//         next(error);
+//     }
+// }
+
+const getDashboardDetails = async (req, res, next) => {
+    try {
+        const userDetails = await User.findById(req.userID);
+        if (!userDetails) throw new AuthError("Invalid User");
+
+        const departmentDetails = await Department.findOne({ dept_ID: userDetails.departmentID });
+        if (!departmentDetails) throw new NotFoundError("Department Not Found");
+
+        const trucks = await Truck.find({ departmentID: userDetails.departmentID }, { truck_number: 1 });
+        const totalFirefighters = await User.countDocuments({departmentID:userDetails.departmentID, active:true})
+        const captainDetails = await User.findOne({user_ID:departmentDetails.captain_ID});
+        // Use Promise.all to await all promises created in the map
+        const inspectedCounts = await Promise.all(trucks.map(async (element) => {
+            const inspection = await Inspection.findOne({ truck_number: element.truck_number, departmentID: userDetails.departmentID }).sort({ createdAt: -1 });
+            if (!inspection) {
+                return 0;
+            } else {
+                const isToday = isDateToday(inspection.createdAt);
+                return isToday;
+            }
+        }));
+
+        const totalInspectedCount = inspectedCounts.reduce((acc, count) => acc + count, 0);
+        const totalTrucks = trucks.length;
+
+        const load = {
+            dept_name:departmentDetails.name,
+            dept_ID:departmentDetails.dept_ID,
+            totalTrucks,
+            totalInspectedCount,
+            captain_ID:departmentDetails.captain_ID,
+            captain_name:`${captainDetails.firstname} ${captainDetails.lastname}`,
+            totalFirefighters
+        }
+        res.status(200).send({ success: true, message: "Details", data: load });
+    } catch (error) {
+        next(error);
+    }
+}
+
+const getInspectedTrucks = async(req, res, next)=>{
+    try{
+        const userDetails = await User.findById(req.userID);
+        if (!userDetails) throw new AuthError("Invalid User");
+        const trucks = await Truck.find({ departmentID: userDetails.departmentID }, { truck_number: 1 });
+        const inspectedTrucks = await Promise.all(trucks.map(async (element) => {
+            const inspection = await Inspection.findOne({ truck_number: element.truck_number, departmentID: userDetails.departmentID }).sort({ createdAt: -1 });
+            if (!inspection) {
+                return 0;
+            } else {
+                const isToday = isDateToday(inspection.createdAt);
+                return isToday===1?inspection:0;
+            }
+        }));
+
+        const inspectedTruckList = inspectedTrucks.filter((element) => element !== 0);
+
+        res.status(200).send({ success: true, message: "Details", data: inspectedTruckList });
+    }catch(error){
+        next(error);
+    }
+}
 
 module.exports = {
     signup,
@@ -584,5 +697,7 @@ module.exports = {
     getDetails,
     submitInspection,
     getInspectionTruckWise,
-    getInspectionById
+    getInspectionById,
+    getDashboardDetails,
+    getInspectedTrucks
 }

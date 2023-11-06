@@ -10,7 +10,10 @@ const userSignupSchema = Joi.object({
         'any.only':"Confirm password does not match with Password"
     }),
     departmentID:Joi.string().required(),
-    otp:Joi.number().required()
+    otp:Joi.number().required(),
+    isCaptain: Joi.number().required().messages({
+        'any.required': "Please mark the Check Box"
+    })
 });
 const updateDetailsSchema = Joi.object({
     firstname:Joi.string().required(),

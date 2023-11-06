@@ -60,7 +60,6 @@ app.get("/account/forgotpassword", (req, res)=>{
     res.sendFile(path.join(__dirname, "./client/out", "account/forgotpassword.html"));
 })
 
-
 app.get("/equipments/", (req, res)=>{
     res.sendFile(path.join(__dirname, "./client/out", "equipments.html"));
 })
@@ -72,11 +71,14 @@ app.get("/equipments/details", (req, res)=>{
 app.get("/maintenance/", (req, res)=>{
     res.sendFile(path.join(__dirname, "./client/out", "maintenance.html"));
 })
-app.get("/maintenance/", (req, res)=>{
-    res.sendFile(path.join(__dirname, "./client/out", "maintenance.html"));
-})
 app.get("/maintenance/inspection/", (req, res)=>{
     res.sendFile(path.join(__dirname, "./client/out", "maintenance/inspection.html"));
+})
+app.get("/maintenance/oldview", (req, res)=>{
+    res.sendFile(path.join(__dirname, "./client/out", "maintenance/oldview.html"));
+})
+app.get("/maintenance/view/", (req, res)=>{
+    res.sendFile(path.join(__dirname, "./client/out", "maintenance/view.html"));
 })
 app.get("/manageequipments/", (req, res)=>{
     res.sendFile(path.join(__dirname, "./client/out", "manageequipments.html"));

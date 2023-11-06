@@ -477,7 +477,7 @@ const getFireFighters = async(req, res, next)=>{
             lastname:1,
             email:1,
             active:1
-            });
+            }).sort({createdAt:-1});
         res.status(200).send({success:true, message:"firefighters list", data:firefighters});
     }catch(error){
         next(error);

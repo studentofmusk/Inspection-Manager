@@ -17,7 +17,7 @@ const userauth = async (req, res, next)=>{
         req.userID = isExist.id;
         next();
     }catch(error){
-        console.log(error.message)
+        console.log("User Auth", error.message)
         next(error);
     }
 }

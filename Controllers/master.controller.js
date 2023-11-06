@@ -5,7 +5,7 @@ const Master = require("../Models/master.model");
 const Notification = require("../Models/notification.model");
 const User = require("../Models/user.model");
 const { departmentSchema, adminApproveSchema, masterSignupSchema, masterLoginSchema } = require("./Schema/Validator");
-const { DecryptAndCheck, generateToken } = require("./Tools");
+const { DecryptAndCheck, generateToken, RaiseMail } = require("./Tools");
 
 //Create New Department
 const createDepartment = async(req, res, next)=>{
@@ -45,15 +45,33 @@ const setCaptain = async(req, res, next)=>{
         const isDeptExist = await Department.findOne({dept_ID:departmentID})
         if(!isDeptExist) throw new NotFoundError("Invalid Department ID");
 
-        const isUserExist = await User.findOne({user_ID:userID});
+        const isUserExist = await User.findOne({user_ID:userID, departmentID:isDeptExist.dept_ID});
         if(!isUserExist) throw new NotFoundError("Invalid User ID");
         
         
         const isCaptainExist = await Department.findOne({captain_ID:isUserExist.user_ID})
         if(isCaptainExist) throw new Conflict(`User Already have an Admin Access at Department:${isCaptainExist.dept_ID}(${isCaptainExist.name})`);
         
+        const isOldCaptain = await User.findOne({user_ID:isDeptExist.captain_ID, departmentID:isDeptExist.dept_ID});
+        if(isOldCaptain){
+            await isOldCaptain.removeAdmin()
+        }
+
         await isDeptExist.changeCaptain(isUserExist.user_ID);
         await isUserExist.grantAdmin()
+
+        const mail = await RaiseMail(isUserExist.email, " Captain Assignment Confirmation",
+         `
+         You have been granted captain privileges for Department Name: ${isDeptExist.name}, Department ID: ${isDeptExist.dept_ID} . Congratulations! Your dedication and commitment are greatly appreciated, and we trust that you will continue to serve with excellence in your new role.
+
+        If you have any questions or require further information, please do not hesitate to reach out to us. We wish you the best in your new responsibilities and look forward to your continued contributions.
+        
+Best regards,
+
+Firehouse EquipGuard Team
+FireEquipmentMonitor@gmail.com
+        `)
+
 
         const raiseAlert = new Notification({
             from:"master",
@@ -151,6 +169,10 @@ const loginMaster = async (req, res, next)=>{
         next(error)
     }
 }
+const logoutMaster = (req, res) => {
+    res.clearCookie("Master"); 
+    res.sendStatus(200);
+}
 
 const getMasterNotification = async(req, res, next)=>{
     try{
@@ -162,10 +184,30 @@ const getMasterNotification = async(req, res, next)=>{
         
         const inbox = await Notification.find({
             to:"master"
-        });
+        }).sort({createdAt:-1});
         res.status(200).send({success:true, message:"Master Notifications Fetched", data:{inbox}});
 
     }catch(error){
+        next(error);
+    }
+}
+
+const getDepartments = async(req, res, next)=>{
+    try {
+        const departments = await Department.find();
+        res.status(200).send({success:true, message:"Departments", data:departments});
+    } catch (error) {
+        next(error);
+    }
+}
+
+const removeDeparment = async(req, res, next)=>{
+    try {
+        const id = req.query.id;
+        const isDeleted = await Department.findByIdAndDelete(id);
+        if(!isDeleted) throw new NotFoundError("Invalid ID");
+        res.status(200).send({success:true, message:"Department Deleted"});
+    } catch (error) {
         next(error);
     }
 }
@@ -233,5 +275,8 @@ module.exports = {
     createMasterAccount,
     loginMaster,
     getMasterNotification,
-    adminApprove
+    adminApprove,
+    logoutMaster,
+    getDepartments,
+    removeDeparment
 }

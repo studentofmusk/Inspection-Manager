@@ -42,6 +42,11 @@ const userSchema = new Schema({
     },
     fgtToken:{
         type:String,
+    },
+    createdAt:{
+        type:Date,
+        default:Date.now,
+        required:true
     }
 })
 
@@ -77,6 +82,7 @@ userSchema.methods.removeAdmin = async function (){
 userSchema.methods.grantAdmin = async function (){
     try {
         this.admin = true;
+        this.active = true;
         await this.save();
     } catch (error) {
         throw error

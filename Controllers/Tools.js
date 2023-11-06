@@ -107,6 +107,21 @@ const verifyToken = (token)=>{
     
 }
 
+function isDateToday(createdAt) {
+    const currentDate = new Date();
+    const createdAtDate = new Date(createdAt);
+
+    // Check if the date parts (year, month, and day) are the same
+    if (
+        currentDate.getFullYear() === createdAtDate.getFullYear() &&
+        currentDate.getMonth() === createdAtDate.getMonth() &&
+        currentDate.getDate() === createdAtDate.getDate()
+    ) {
+        return 1; // The dates are the same (today)
+    } else {
+        return 0; // The dates are different
+    }
+}
 
 
 module.exports= {
@@ -115,5 +130,6 @@ module.exports= {
     Encrypt, 
     DecryptAndCheck,
     generateToken,
-    verifyToken
+    verifyToken,
+    isDateToday
 }
