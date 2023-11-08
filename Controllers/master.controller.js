@@ -1,5 +1,5 @@
 const { Conflict, BadRequestError, NotFoundError } = require("../Error/error");
-const OTP = require("../Models/OTP.model");
+const OTP = require("../Models/otp.model");
 const Department = require("../Models/department.model");
 const Master = require("../Models/master.model");
 const Notification = require("../Models/notification.model");

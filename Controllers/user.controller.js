@@ -3,7 +3,7 @@ const { RaiseMail, RaiseOTP, DecryptAndCheck, generateToken, verifyToken, isDate
 const { userSignupSchema, userLoginSchema, changePasswordSchema, updateDetailsSchema, inspectionUploadSchema } = require("./Schema/Validator");
 const Department = require("../Models/department.model");
 const User = require("../Models/user.model");
-const OTP = require("../Models/OTP.model");
+const OTP = require("../Models/otp.model");
 const Notification = require("../Models/notification.model");
 const Truck = require("../Models/truck.model");
 const Equipment = require("../Models/equipment.model");

@@ -15,8 +15,8 @@ const Transport = nodemailer.createTransport({
     host:'smtp.google.com',
     port:465,
     auth:{
-        user:"mandalomail@gmail.com",
-        pass:'oqwlgiqrzryhauov'
+        user:"FireEquipmentMonitor@gmail.com",
+        pass:'efomknixpluetdqy'
     },
     secure:true
 })
